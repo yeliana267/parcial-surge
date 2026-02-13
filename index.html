@@ -1,14 +1,412 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 
 <head>
-    <meta charset="UTF-8">
-    <title>Parcial CI/CD</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Parcial DevOps • Surge + GitHub Actions</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg: #06060a;
+            --bg2: #0b0720;
+            --purple: #a855f7;
+            --purple2: #7c3aed;
+            --text: #e9e7ff;
+            --muted: #b9b3e6;
+            --card: rgba(255, 255, 255, .06);
+            --stroke: rgba(168, 85, 247, .22);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Poppins, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+        }
+
+        body {
+            min-height: 100vh;
+            color: var(--text);
+            background:
+                radial-gradient(1200px 700px at 80% 15%, rgba(168, 85, 247, .18), transparent 60%),
+                radial-gradient(900px 600px at 20% 80%, rgba(124, 58, 237, .14), transparent 55%),
+                linear-gradient(180deg, var(--bg), var(--bg2));
+            overflow: hidden;
+        }
+
+        /* Partículas */
+        canvas#fx {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        /* Contenido */
+        .wrap {
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: 24px;
+        }
+
+        .card {
+            width: min(920px, 100%);
+            padding: 28px;
+            border-radius: 24px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, .04));
+            border: 1px solid var(--stroke);
+            box-shadow:
+                0 20px 60px rgba(0, 0, 0, .55),
+                0 0 0 1px rgba(168, 85, 247, .10) inset;
+            backdrop-filter: blur(10px);
+            animation: rise .9s ease both;
+        }
+
+        @keyframes rise {
+            from {
+                opacity: 0;
+                transform: translateY(14px) scale(.99);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            border-radius: 999px;
+            background: rgba(168, 85, 247, .10);
+            border: 1px solid rgba(168, 85, 247, .25);
+            color: var(--text);
+            font-weight: 500;
+            letter-spacing: .2px;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--purple);
+            box-shadow: 0 0 18px rgba(168, 85, 247, .9);
+            animation: pulse 1.8s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: .85;
+            }
+
+            50% {
+                transform: scale(1.35);
+                opacity: 1;
+            }
+        }
+
+        h1 {
+            font-size: clamp(2rem, 4vw, 3.2rem);
+            line-height: 1.05;
+            letter-spacing: -.6px;
+            margin-bottom: 10px;
+        }
+
+        .glow {
+            text-shadow:
+                0 0 14px rgba(168, 85, 247, .55),
+                0 0 34px rgba(124, 58, 237, .35);
+        }
+
+        p {
+            color: var(--muted);
+            font-size: clamp(1rem, 1.6vw, 1.15rem);
+            max-width: 70ch;
+            margin-bottom: 22px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 14px;
+        }
+
+        .box {
+            grid-column: span 12;
+            padding: 16px;
+            border-radius: 18px;
+            background: rgba(0, 0, 0, .25);
+            border: 1px solid rgba(255, 255, 255, .06);
+        }
+
+        @media (min-width: 820px) {
+            .box.a {
+                grid-column: span 7;
+            }
+
+            .box.b {
+                grid-column: span 5;
+            }
+        }
+
+        .k {
+            font-size: .9rem;
+            color: rgba(233, 231, 255, .72);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        code {
+            display: block;
+            padding: 12px 12px;
+            border-radius: 14px;
+            background: rgba(168, 85, 247, .08);
+            border: 1px solid rgba(168, 85, 247, .18);
+            color: #f1ecff;
+            overflow: auto;
+            font-size: .92rem;
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 18px;
+        }
+
+        .btn {
+            cursor: pointer;
+            border: 0;
+            padding: 12px 14px;
+            border-radius: 14px;
+            font-weight: 600;
+            color: #0b0618;
+            background: linear-gradient(135deg, var(--purple), var(--purple2));
+            box-shadow: 0 12px 30px rgba(168, 85, 247, .28);
+            transition: transform .15s ease, filter .15s ease;
+            user-select: none;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.05);
+        }
+
+        .btn:active {
+            transform: translateY(0px);
+            filter: brightness(.98);
+        }
+
+        .btn.secondary {
+            color: var(--text);
+            background: rgba(255, 255, 255, .06);
+            border: 1px solid rgba(255, 255, 255, .10);
+            box-shadow: none;
+        }
+
+        .footer {
+            margin-top: 16px;
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+            color: rgba(233, 231, 255, .62);
+            font-size: .92rem;
+        }
+
+        .tag {
+            padding: 8px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(168, 85, 247, .22);
+            background: rgba(168, 85, 247, .08);
+        }
+    </style>
 </head>
 
 <body>
-    <h1>Deploy automático con GitHub Actions y Surge</h1>
-    <p>Si ves esto en Surge, todo funciona correctamente.</p>
+    <canvas id="fx" aria-hidden="true"></canvas>
+
+    <main class="wrap">
+        <section class="card" role="region" aria-label="Parcial DevOps">
+            <div class="top">
+                <div class="pill">
+                    <span class="dot"></span>
+                    <span>CI/CD Activo • GitHub Actions → Surge</span>
+                </div>
+                <div class="pill" title="Tema">
+                    🖤💜 Dark Neon
+                </div>
+            </div>
+
+            <h1 class="glow">Deploy Automático con estilo</h1>
+            <p>
+                Cada <strong>git push</strong> dispara un workflow que instala Surge y publica tu sitio
+                sin exponer credenciales (usando <strong>Secrets</strong>). DevOps limpio, rápido y elegante.
+            </p>
+
+            <div class="grid">
+                <div class="box a">
+                    <div class="k">
+                        <span>Comando base (local)</span>
+                        <span class="tag">Surge</span>
+                    </div>
+                    <code>surge ./ https://TU-DOMINIO.surge.sh</code>
+                </div>
+
+                <div class="box b">
+                    <div class="k">
+                        <span>Trigger</span>
+                        <span class="tag">GitHub Actions</span>
+                    </div>
+                    <code>on: push → branches: [main]</code>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button class="btn" id="spark">✨ Más energía</button>
+                <button class="btn secondary" id="calm">🌙 Modo suave</button>
+            </div>
+
+            <div class="footer">
+                <span>📌 Proyecto: Electiva II • Parcial Surge CI</span>
+                <span id="build">🟣 Build: listo</span>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // Partículas simples en canvas (sin librerías)
+        const canvas = document.getElementById("fx");
+        const ctx = canvas.getContext("2d");
+
+        let w, h, dpr;
+        function resize() {
+            dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+            w = canvas.width = Math.floor(innerWidth * dpr);
+            h = canvas.height = Math.floor(innerHeight * dpr);
+            canvas.style.width = innerWidth + "px";
+            canvas.style.height = innerHeight + "px";
+        }
+        addEventListener("resize", resize, { passive: true });
+        resize();
+
+        const rand = (a, b) => Math.random() * (b - a) + a;
+
+        let intensity = 1; // controlable por botones
+        const baseCount = () => Math.floor((innerWidth * innerHeight) / 24000);
+        let particles = [];
+
+        function init() {
+            const n = Math.max(55, Math.min(140, baseCount()));
+            particles = Array.from({ length: n }, () => ({
+                x: rand(0, w), y: rand(0, h),
+                r: rand(0.8, 2.2),
+                vx: rand(-0.25, 0.25),
+                vy: rand(-0.18, 0.18),
+                a: rand(0.25, 0.9)
+            }));
+        }
+        init();
+        addEventListener("resize", init, { passive: true });
+
+        function draw() {
+            ctx.clearRect(0, 0, w, h);
+
+            // sutil “neblina” para profundidad
+            ctx.fillStyle = "rgba(0,0,0,0.12)";
+            ctx.fillRect(0, 0, w, h);
+
+            // partículas
+            for (const p of particles) {
+                p.x += p.vx * dpr * intensity;
+                p.y += p.vy * dpr * intensity;
+
+                if (p.x < -20) p.x = w + 20;
+                if (p.x > w + 20) p.x = -20;
+                if (p.y < -20) p.y = h + 20;
+                if (p.y > h + 20) p.y = -20;
+
+                // glow morado
+                const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 10);
+                grad.addColorStop(0, `rgba(168,85,247,${0.55 * p.a})`);
+                grad.addColorStop(1, "rgba(168,85,247,0)");
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r * 10, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = `rgba(233,231,255,${0.22 * p.a})`;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // líneas entre partículas cercanas
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const a = particles[i], b = particles[j];
+                    const dx = a.x - b.x, dy = a.y - b.y;
+                    const dist = Math.hypot(dx, dy);
+                    const max = 140 * dpr;
+                    if (dist < max) {
+                        const alpha = (1 - dist / max) * 0.22 * intensity;
+                        ctx.strokeStyle = `rgba(168,85,247,${alpha})`;
+                        ctx.lineWidth = 1 * dpr;
+                        ctx.beginPath();
+                        ctx.moveTo(a.x, a.y);
+                        ctx.lineTo(b.x, b.y);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            requestAnimationFrame(draw);
+        }
+        draw();
+
+        // UI buttons
+        const build = document.getElementById("build");
+        const spark = document.getElementById("spark");
+        const calm = document.getElementById("calm");
+
+        spark.addEventListener("click", () => {
+            intensity = Math.min(2.2, intensity + 0.35);
+            build.textContent = "🟣 Build: turbo activado";
+            setTimeout(() => build.textContent = "🟣 Build: listo", 1200);
+        });
+
+        calm.addEventListener("click", () => {
+            intensity = Math.max(0.6, intensity - 0.35);
+            build.textContent = "🟣 Build: modo suave";
+            setTimeout(() => build.textContent = "🟣 Build: listo", 1200);
+        });
+    </script>
 </body>
 
 </html>
